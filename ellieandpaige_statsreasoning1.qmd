@@ -1,0 +1,198 @@
+---
+title: "Statistical Reasoning 1"
+authors: "Ellie and Paige"
+format: pdf
+editor: visual
+---
+
+```{r}
+library(brms) # for statistics
+library(tidyverse)
+library(ggeffects) # for the prediction plot
+library(lterdatasampler) # for built-in datasets
+
+```
+
+## Load in data
+
+```{r}
+head(pie_crab)
+```
+
+### Q1.1 Interpret the graph
+
+Answer: It appears that crabs may on average get larger as latitude increases, but variance in size also increases.
+
+### Q1.2 Beautify this graph
+
+```{r}
+pie_crab %>% 
+  ggplot(aes(x = latitude, y = size, color = latitude)) +
+  geom_jitter(size = 2.5, alpha = 0.7, width = .1) +
+  scale_color_continuous()+
+  # Make the y-axis include 0
+  ylim(0, NA)+
+  labs(x= "Latitude",
+       y = "Size (mm)")+
+  theme_bw()
+```
+### Q1.3
+The iter= argument specifies the number of times to run the model, or the number of iterations.
+
+### Q1.4 Make a hypothesis
+
+We hypothesize that higher variablity in water temperature will increase crab size because there will be more nutrients in the water and increased metabolism, thereby increasing growth rate.
+
+### Q1.5 Graph the data
+
+```{r}
+pie_crab %>% 
+  ggplot(aes(x = water_temp_sd, y = size, color = water_temp_sd)) +
+  geom_jitter(size = 2.5, alpha = 0.7, width = .1) +
+  scale_color_continuous()+
+  # Make the y-axis include 0
+  ylim(0, NA)+
+  labs(x= "Water Temperature standard deviation",
+       y = "Size (mm)")+
+  theme_bw()
+
+```
+### Q1.6 Interpret the graph
+
+Answer: there does not appear to be much variation in crab size explained by water temperature variation. We are fairly confident in this, as there is a lot of overlap between all groups.
+
+### Q1.7
+```{r}
+# water temp variation model
+m.crab.watersd <- 
+  brm(data = pie_crab, # Give the model the pie_crab data
+      # Choose a gaussian (normal) distribution
+      family = gaussian,
+      # Specify the model here. 
+      size ~ water_temp_sd,
+      # Here's where you specify parameters for executing the Markov chains
+      # We're using similar to the defaults, except we set cores to 4 so the analysis runs faster than the default of 1
+      iter = 2000, warmup = 1000, chains = 4, cores = 4,
+      # Setting the "seed" determines which random numbers will get sampled.
+      # In this case, it makes the randomness of the Markov chain runs reproducible 
+      # (so that both of us get the exact same results when running the model)
+      seed = 4,
+      # Save the fitted model object as output - helpful for reloading in the output later
+      file = "output/m.crab.watersd")
+
+summary(m.crab.watersd)
+
+```
+### Q1.8 Assess the model
+
+
+```{r eval = FALSE}
+# show posteriors and chains
+plot(m.crab.watersd) 
+
+# show summary, including rhat
+summary(m.crab.watersd)
+
+```
+Answer: The Rhat value = 1, the posterior distributions have a clear hump, and the chains overlap. Therefore, we can conclude that the models ran correctly.
+
+### Q1.9
+Answer: The linear regression shows that carapace width increases by 0.10 mm per increase in water temperature standard deviation. However, the 95% credible intervals were between -0.21 and .41. Since this range includes 0, our model shows that we cannot conclude that there is any effect of water temp variation on crab size.
+
+### Q2.1 Make a question
+
+```{r}
+head(nwt_pikas)
+nwt_pikas_doy <- nwt_pikas %>% 
+  # Add a new column called day_of_year
+  # yday extracts the day of year from the date column
+  mutate(day_of_year = yday(date)) %>% 
+  # relocate the day_of_year column after the date column
+  relocate(day_of_year, .after = date)
+
+head(nwt_pikas_doy)
+```
+
+
+Question: How does the stress-gradient hypothesis apply to pikas? More clearly, how does stress in pikas vary as a function of elevation?
+
+------------------------------------------------------------------------
+
+### Q2.2 Make a hypothesis
+
+
+Because (we assume) there are less predators at higher elevations, pikas at high elevation tend to be less stressed than those at low elevations. Therefore, a larger value of elevation should show lower values of stress.
+
+------------------------------------------------------------------------
+
+### Q2.3 Graph the data
+
+
+```{r}
+ggplot(nwt_pikas_doy, aes(x= elev_m, y = concentration_pg_g))+
+  geom_point()+
+  labs(x= "Elevation (m)",
+       y= "Stress (pg/g)")+
+  theme_minimal()
+```
+### Q2.4 Set up and run a model
+
+
+```{r}
+m.pika_elev <- 
+  brm(data = nwt_pikas_doy, # Give the model the pie_crab data
+      # Choose a gaussian (normal) distribution
+      family = gaussian,
+      # Specify the model here. 
+      concentration_pg_g ~ elev_m,
+      # Here's where you specify parameters for executing the Markov chains
+      # We're using similar to the defaults, except we set cores to 4 so the analysis runs faster than the default of 1
+      iter = 2000, warmup = 1000, chains = 4, cores = 4,
+      # Setting the "seed" determines which random numbers will get sampled.
+      # In this case, it makes the randomness of the Markov chain runs reproducible 
+      # (so that both of us get the exact same results when running the model)
+      seed = 4,
+      # Save the fitted model object as output - helpful for reloading in the output later
+      file = "output/m.pika_elev")
+```
+
+------------------------------------------------------------------------
+
+### Q2.5 Assess the model
+
+
+Answer: The model ran correctly as we have an Rhat of 1, the chains overlap, and there is a clear peak in the posterior distributions.
+
+```{r}
+plot(m.pika_elev)
+summary(m.pika_elev)
+```
+### Q2.6 Interpret the model
+
+Interpret your model by answering:
+
+1.  What is the effect of your predictor? Remember to describe the effect using the units to make it biologically meaningful.
+2.  Is the effect reasonably different from zero? How do you know?
+
+Answer: pg/g in the pika poop decreased by 0.34 for every increase 1 meter in elevation. The effect is not reasonably different from 0 because our credible interval includes 0.
+
+------------------------------------------------------------------------
+
+### Q2.7 Plot the model on the data
+
+
+```{r}
+# compatibility interval. the shows uncertainty in the average response.
+confm.pika.elev <- predict_response(m.pika_elev)
+plot(confm.pika.elev, show_data = TRUE)
+
+?nwt_pikas
+```
+
+------------------------------------------------------------------------
+
+### Q2.8 Write a small results paragraph
+
+
+
+Answer: A linear regression showed little to no effect of elevation on pika stress. Glucocorticoid metabolite (GCM) concentration in the pika poop decreased by 0.34 pg/g for every 1 meter in elevation. However, the effect is not reasonably different from 0 because our credible interval includes 0 (95%CI 5.45 - 4.52).

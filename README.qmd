@@ -67,6 +67,8 @@ pie_crab %>%
 
 Interpret this graph in 1-2 sentences: Does it look like size increases with latitude? Describe how confident you are in this interpretation.
 
+Answer: It appears that crabs may on average get larger as latitude increases, but variance in size also increases.
+
 ------------------------------------------------------------------------
 
 ### Q1.2 Beautify this graph
@@ -74,7 +76,15 @@ Interpret this graph in 1-2 sentences: Does it look like size increases with lat
 Make this graph look a bit nicer! Use the skills you learned earlier in the quarter.
 
 ```{r}
-
+pie_crab %>% 
+  ggplot(aes(x = latitude, y = size, color = latitude)) +
+  geom_jitter(size = 2.5, alpha = 0.7, width = .1) +
+  scale_color_continuous()+
+  # Make the y-axis include 0
+  ylim(0, NA)+
+  labs(x= "Latitude",
+       y = "Size (mm)")+
+  theme_bw()
 ```
 
 ------------------------------------------------------------------------
@@ -118,6 +128,12 @@ m.crab.lat <-
 
 Navigate to the `brm` help page to answer: What does the `iter =` argument do?
 
+```{r}
+?brm
+```
+
+The iter= argument specifies the number of times to run the model, or the number of iterations.
+
 ------------------------------------------------------------------------
 
 ## 1.3 Assess model
@@ -136,11 +152,11 @@ Let's also look at the chains and the "posterior distributions" in a graph.
 plot(m.crab.lat) # show posteriors and chains
 ```
 
-We're looking for three things: 
+We're looking for three things:
 
-1.    Are the posterior samples on the left each a smooth distribution, with one clean peak, or do they have multiple clear peaks? The latter is a bad sign. They look good in this case. 
-2.    Are the four chains on the overlapping each other, or are they clearly separate? The latter is a bad sign. We again look good in this case.
-3.    Are the four chains flat, or is there a clear trend up or down? The latter is a bad sign. We again look good in this case.
+1.  Are the posterior samples on the left each a smooth distribution, with one clean peak, or do they have multiple clear peaks? The latter is a bad sign. They look good in this case.
+2.  Are the four chains on the overlapping each other, or are they clearly separate? The latter is a bad sign. We again look good in this case.
+3.  Are the four chains flat, or is there a clear trend up or down? The latter is a bad sign. We again look good in this case.
 
 If we fail any of these tests, we would want to try running the MCMC chain with more iterations. We may also need to think hard about whether our model is correctly designed.
 
@@ -158,19 +174,19 @@ The output reminds us of our model formula that we chose (`size ~ latitude`). Mo
 
 Looking at our table, we see the estimate for `latitude` is 0.48: This indicates that the model estimated that for every 1 degree latitude, carapace width increases by 0.48 mm.
 
-------
+------------------------------------------------------------------------
 
 Earlier you were asked to "*describe how confident you are in this interpretation*" when qualitatively interpreting the graph of `size` vs `latitude`. Now, let's answer this quantitatively by examining how much confidence the model has in the size-latitude association. Are only positive (non-zero) slopes compatible with the data? Or would a flat (slope of zero) association also be compatible? If a slope of zero is compatible with the data, then we can't really say that our predictor (latitude) has any effect on our response (size).
 
 To assess this, we can look at the lower and upper 95% Credible Interval columns (`l-95% CI` and `u-95% CI`, respectively) and see if that interval range intersects with zero. We can see that our slope estimate (the estimate of `latitude`) ranges from 0.42 to 0.55 - zero is not included in this range. Therefore, we can reasonably conclude here that, given our model, the effect of latitude on body size has a 95% chance of being between those values, and importantly, NOT zero!
 
--------
+------------------------------------------------------------------------
 
 In the results section of a paper, we would write something along these lines:
 
 *We found that crab size increased with latitude, with an increase of 0.48mm of carapace width per 1 degree of latitude. Our 95% credible intervals were between 0.42 and 0.55 mm/degree, suggesting that given our model, the effect of latitude on carapace width is different from zero.*
 
--------
+------------------------------------------------------------------------
 
 ### Bonus
 
@@ -189,10 +205,19 @@ Ok! The model reports a zero chance of a slope less than or equal to zero. Feel 
 
 ## 1.5 Plot model on the data
 
-Here we are going to plot the data and the model output in two different ways: 
+Here we are going to plot the data and the model output in two different ways:
 
--     **Compatibility interval** shows uncertainty in the average response (the estimate for the slope) 
--     **Prediction interval** shows uncertainty in the data around the average response (the estimate for the slope)
+-   
+
+    ```         
+    **Compatibility interval** shows uncertainty in the average response (the estimate for the slope) 
+    ```
+
+-   
+
+    ```         
+    **Prediction interval** shows uncertainty in the data around the average response (the estimate for the slope)
+    ```
 
 ```{r}
 # compatibility interval. the shows uncertainty in the average response.
@@ -213,25 +238,38 @@ plot(confm.crab.lat, show_data = TRUE)
 
 Let's repeat this example with a new variable: the water temperature standard deviation, `water_temp_sd`. The standard deviation (sd) can be used as a metric of variability: higher sd means higher variability. We can ask: *is higher variability in water temperature associated with fiddler crab body size?*
 
--------
+------------------------------------------------------------------------
 
 ### Q1.4 Make a hypothesis
 
 *Before* you look at the data, what direction of an effect do you expect? Do you think higher variability would be associated with larger or smaller crabs? Why? Please write 1-2 sentences.
 
-----------
+We hypothesize that higher variablity in water temperature will increase crab size because there will be more nutrients in the water and increased metabolism, thereby increasing growth rate.
+
+------------------------------------------------------------------------
 
 ### Q1.5 Graph the data
 
 ```{r}
+pie_crab %>% 
+  ggplot(aes(x = water_temp_sd, y = size, color = water_temp_sd)) +
+  geom_jitter(size = 2.5, alpha = 0.7, width = .1) +
+  scale_color_continuous()+
+  # Make the y-axis include 0
+  ylim(0, NA)+
+  labs(x= "Water Temperature standard deviation",
+       y = "Size (mm)")+
+  theme_bw()
 
 ```
 
-----------
+------------------------------------------------------------------------
 
 ### Q1.6 Interpret the graph
 
 Does it look like size changes with the sd of water temperature? Describe how confident you are in this interpretation.
+
+Answer: there does not appear to be much variation in crab size explained by water temperature variation. We are fairly confident in this, as there is a lot of overlap between all groups.
 
 ------------------------------------------------------------------------
 
@@ -243,18 +281,35 @@ $size = intercept + slope*watertempsd$
 
 ------------------------------------------------------------------------
 
-Keep all of the output the same except for the parts where you specify 1) the model formula and 2) the `file = ` output. Name this new model `m.crab.watersd` to distinguish it from the latitude model.
+Keep all of the output the same except for the parts where you specify 1) the model formula and 2) the `file =` output. Name this new model `m.crab.watersd` to distinguish it from the latitude model.
 
 ```{r}
+# water temp variation model
+m.crab.watersd <- 
+  brm(data = pie_crab, # Give the model the pie_crab data
+      # Choose a gaussian (normal) distribution
+      family = gaussian,
+      # Specify the model here. 
+      size ~ water_temp_sd,
+      # Here's where you specify parameters for executing the Markov chains
+      # We're using similar to the defaults, except we set cores to 4 so the analysis runs faster than the default of 1
+      iter = 2000, warmup = 1000, chains = 4, cores = 4,
+      # Setting the "seed" determines which random numbers will get sampled.
+      # In this case, it makes the randomness of the Markov chain runs reproducible 
+      # (so that both of us get the exact same results when running the model)
+      seed = 4,
+      # Save the fitted model object as output - helpful for reloading in the output later
+      file = "output/m.crab.watersd")
+
 
 ```
 
-
 ```{r}
 
+summary(m.crab.watersd)
 ```
 
---------------
+------------------------------------------------------------------------
 
 ### Q1.8 Assess the model
 
@@ -269,26 +324,27 @@ summary(m.crab.watersd)
 
 ```
 
----------
+------------------------------------------------------------------------
 
 ### Q1.9 Interpret the model
 
 Based on the summary output, interpret your model by answering:
 
-1.    What is the effect of your predictor? This information is in the `estimate` column to the right of your predictor `water_temp_sd`. Remember to describe the effect using the units to make it biologically meaningful.
-2.    Is the effect reasonably different from zero? In other words, does the confidence interval intersect with zero?
+1.  What is the effect of your predictor? This information is in the `estimate` column to the right of your predictor `water_temp_sd`. Remember to describe the effect using the units to make it biologically meaningful.
+2.  Is the effect reasonably different from zero? In other words, does the confidence interval intersect with zero?
+
+Answer: The linear regression shows that carapace width increases by 0.10 mm per increase in water temperature standard deviation. However, the 95% credible intervals were between -0.21 and .41. Since this range includes 0, our model shows that we cannot conclude that there is any effect of water temp variation on crab size.
 
 ```{r eval = FALSE}
 # Show model output
 summary(m.crab.watersd)
 ```
 
---------
+------------------------------------------------------------------------
 
 This is a situation where our predictor variable, `water_temp_sd`, does not seem to have an effect on the body size of crabs. We would say something along the lines of: *We found an increase of 0.10mm of carapace width per 1 unit of the standard deviation of water temperature, but our 95% credible intervals included zero (-0.20 to 0.40), suggesting that given our model, the effect of water temperature standard deviation on carapace width is not different from zero.*
 
---------
-
+------------------------------------------------------------------------
 
 # 2. Back to Pikas!
 
@@ -302,7 +358,7 @@ Let's look at the data again
 head(nwt_pikas)
 ```
 
-Date is one of the columns, but we specifically want "day of year" as a metric to quantify how late in the season it is. This also allows us to interpret our model's output a little more informatively. 
+Date is one of the columns, but we specifically want "day of year" as a metric to quantify how late in the season it is. This also allows us to interpret our model's output a little more informatively.
 
 We can extract day of year using the `lubridate` package (within `tidyverse`), which is all about working with dates and times:
 
@@ -319,11 +375,13 @@ head(nwt_pikas_doy)
 
 Now it's time to choose! In this section, **choose between explaining the stress variable as a function of either `day of year` or `elevation`**. If you have extra time at the end and would like more practice, you may optionally repeat the analysis on the other variable as well.
 
----------
+------------------------------------------------------------------------
 
 ### Q2.1 Make a question
 
 Clearly articulate the question that you want to ask in one sentence.
+
+Question: How does the stress-gradient hypothesis apply to pikas? More clearly, how does stress in pikas vary as a function of elevation?
 
 ------------------------------------------------------------------------
 
@@ -331,11 +389,21 @@ Clearly articulate the question that you want to ask in one sentence.
 
 *Before* you look at the data, what direction of an effect do you expect? Do you think a larger value of the predictor you chose would be associated with more or less stressed pikas? Why? Please write 1-2 sentences.
 
+Because (we assume) there are less predators at higher elevations, pikas at high elevation tend to be less stressed than those at low elevations. Therefore, a larger value of elevation should show lower values of stress.
+
 ------------------------------------------------------------------------
 
 ### Q2.3 Graph the data
 
 As before, your response variable (stress, which is measured as `concentration_pg_g`) should be on the y-axis, with your predictor variable on the x.
+
+```{r}
+ggplot(nwt_pikas_doy, aes(x= elev_m, y = concentration_pg_g))+
+  geom_point()+
+  labs(x= "Elevation (m)",
+       y= "Stress (pg/g)")+
+  theme_minimal()
+```
 
 ------------------------------------------------------------------------
 
@@ -343,11 +411,36 @@ As before, your response variable (stress, which is measured as `concentration_p
 
 Make sure you store your model output as something informative to you.
 
+```{r}
+m.pika_elev <- 
+  brm(data = nwt_pikas_doy, # Give the model the pie_crab data
+      # Choose a gaussian (normal) distribution
+      family = gaussian,
+      # Specify the model here. 
+      concentration_pg_g ~ elev_m,
+      # Here's where you specify parameters for executing the Markov chains
+      # We're using similar to the defaults, except we set cores to 4 so the analysis runs faster than the default of 1
+      iter = 2000, warmup = 1000, chains = 4, cores = 4,
+      # Setting the "seed" determines which random numbers will get sampled.
+      # In this case, it makes the randomness of the Markov chain runs reproducible 
+      # (so that both of us get the exact same results when running the model)
+      seed = 4,
+      # Save the fitted model object as output - helpful for reloading in the output later
+      file = "output/m.pika_elev")
+```
+
 ------------------------------------------------------------------------
 
 ### Q2.5 Assess the model
 
 Assess whether the model ran correctly by looking at R hat, the chains, and the posterior distributions. Describe your thought process about whether the model ran correctly in 1-2 sentences.
+
+Answer: The model ran correctly as we have an Rhat of 1, the chains overlap, and there is a clear peak in the posterior distributions.
+
+```{r}
+plot(m.pika_elev)
+summary(m.pika_elev)
+```
 
 ------------------------------------------------------------------------
 
@@ -355,22 +448,36 @@ Assess whether the model ran correctly by looking at R hat, the chains, and the 
 
 Interpret your model by answering:
 
-1.    What is the effect of your predictor? Remember to describe the effect using the units to make it biologically meaningful.
-2.    Is the effect reasonably different from zero? How do you know?
+1.  What is the effect of your predictor? Remember to describe the effect using the units to make it biologically meaningful.
+2.  Is the effect reasonably different from zero? How do you know?
 
----------
+Answer: pg/g in the pika poop decreased by 0.34 for every increase 1 meter in elevation. The effect is not reasonably different from 0 because our credible interval includes 0.
+
+------------------------------------------------------------------------
 
 ### Q2.7 Plot the model on the data
 
 Plot either a compatibility interval or prediction interval on the data; specify which you are using.
 
----------
+```{r}
+# compatibility interval. the shows uncertainty in the average response.
+confm.pika.elev <- predict_response(m.pika_elev)
+plot(confm.pika.elev, show_data = TRUE)
+
+?nwt_pikas
+```
+
+------------------------------------------------------------------------
 
 ### Q2.8 Write a small results paragraph
 
 Including the information from Q2.6, write 2-3 sentences as if you were writing the results section of a scientific paper. Include a conclusion sentence that summarizes your finding.
 
---------------
+a number denoting the glucocorticoid metabolite (GCM) concentration in picogram GCM/gram dry pika feces
+
+Answer: A linear regression showed little to no effect of elevation on pika stress. Glucocorticoid metabolite (GCM) concentration in the pika poop decreased by 0.34 pg/g for every 1 meter in elevation. However, the effect is not reasonably different from 0 because our credible interval includes 0 (95%CI 5.45 - 4.52).
+
+------------------------------------------------------------------------
 
 ### Bonus: Repeat with the other variable for practice
 
@@ -382,7 +489,7 @@ Throughout this activity, both datasets had multiple possible predictor variable
 
 This is a great question, and is the foundation for what we will do next week, which is *multiple regression*: a way of setting up models while incorporating the influence of multiple predictors *at the same time*!
 
-------------
+------------------------------------------------------------------------
 
 ### Render to PDF
 
